@@ -11,9 +11,9 @@ import BigPoint
 # 对待插入的点，随机选择一天插入
 # 对每一条数据进行测试
 # 加入shake过程
-# 内外路径同时考虑构造，当profit变化率小于0.1的时候，进行内部路径计算
+# 将内部点合并到外部形成一个大图
 
-def createGraph(myGraph, fileName):
+def createGraph(myGraph, fileName, ll):
     categoryMap = {1:70, 2:40, 3:20, 4:10, 5:5}
 
     file = open(fileName)
@@ -27,12 +27,15 @@ def createGraph(myGraph, fileName):
     G.graph['TotalMaxDuration'] = int(lists[2])
     print(G.graph)
 
+    maxNodeId = -1
+
     # 略过两行注释
     file.readline()
     file.readline()
     for i in range(G.graph['nb_nodes']):
         lists = file.readline().strip().split(';')
         node = int(lists[0])
+        maxNodeId = max(maxNodeId, node)
         G.add_node(node)
         G.nodes[node]['ID'] = node
         G.nodes[node]['ServiceTime'] = categoryMap[int(lists[1])]
@@ -80,8 +83,72 @@ def createGraph(myGraph, fileName):
         G.add_edge(s, t)
         G.edges[s, t]['duration'] = duration
     # print(G.edges.data())
-   
     file.close()
+
+    # 将BigPoint合并到大图中
+    mergeGraph(G, f.split('.')[0], maxNodeId + 1)
+
+def mergeGraph(myGraph, bigPointDir, startNodeId):
+    bigPointPaths = os.listdir(bigPointDir)
+    innerToOutDictList = []
+    for index, fileName in enumerate(bigPointPaths):
+        originNodeId = int(fileName)
+        smallG = nx.read_gml(bigPointDir + '\\' + fileName)
+        smallG = nx.convert_node_labels_to_integers(smallG)
+        innerToOutDict = {}
+        for node in smallG.nodes.data():
+            innerToOutDict[node[0]] = startNodeId
+            innerToOutDictList.append(startNodeId)
+            myGraph.add_node(startNodeId)
+            myGraph.nodes[startNodeId]['ID'] = startNodeId
+            myGraph.nodes[startNodeId]['Profit'] = node[1]['Profit']
+            myGraph.nodes[startNodeId]['ServiceTime'] = node[1]['ServiceTime']
+            myGraph.nodes[startNodeId]['TimeWindows'] = node[1]['TimeWindows'] 
+            startNodeId = startNodeId + 1          
+
+        for edge in smallG.edges.data():
+            p1 = innerToOutDict[edge[0]]
+            p2 = innerToOutDict[edge[1]]
+            myGraph.add_edge(p1, p2)
+            myGraph.edges[p1, p2]['duration'] = edge[2]['duration']
+            myGraph.add_edge(p2, p1)
+            myGraph.edges[p2, p1]['duration'] = edge[2]['duration']
+
+        for node0 in smallG.nodes.data():
+            for node1 in smallG.nodes.data():
+                n0 = innerToOutDict[node0[0]]; n1 = innerToOutDict[node1[0]] 
+                if  n0 == n1:
+                    myGraph.add_edge(n0, n0)
+                    myGraph.edges[n0, n0]['duration'] = 0
+                elif (n0, n1) not in myGraph.edges():
+                    myGraph.add_edge(n0, n1)
+                    myGraph.edges[n0, n1]['duration'] = 1000000
+                    myGraph.add_edge(n1, n0)
+                    myGraph.edges[n1, n0]['duration'] = 1000000
+                elif (n1, n0) not in myGraph.edges():
+                    myGraph.add_edge(n1, n0)
+                    myGraph.edges[n1, n0]['duration'] = 1000000
+                    myGraph.add_edge(n0, n1)
+                    myGraph.edges[n0, n1]['duration'] = 1000000
+                     
+
+        # print(innerToOutDict.values())
+        for innerNode in smallG.nodes.data():
+            for node in myGraph.nodes.data():
+                if (node[0], originNodeId) not in myGraph.edges:
+                    duration = random.randrange(10, 40)
+                else:
+                    duration = myGraph.edges[node[0], originNodeId]['duration']
+                myGraph.add_edge(node[0], innerToOutDict[innerNode[0]])
+                myGraph.edges[node[0], innerToOutDict[innerNode[0]]]['duration'] = max(0, random.randrange(duration - 5, duration + 5))  
+                myGraph.add_edge(innerToOutDict[innerNode[0]], node[0])
+                myGraph.edges[innerToOutDict[innerNode[0]], node[0]]['duration'] = max(0, random.randrange(duration - 5, duration + 5))  
+
+    for fileName in bigPointPaths:
+        originNodeId = int(fileName)
+        myGraph.remove_node(originNodeId) 
+
+    return  
 
 def isCompleteGraph(G):
     nodeNum = len(G.nodes)
@@ -135,6 +202,8 @@ def calcuSlack2(myGraph, travelPath, node, insertLocation, timeParamDict):
     preComponentID = travelPath[0]['ID']
     nextComponentID = -1
 
+
+
     # 对插入点之后的点进行时间更新
     for index, pathComponent in enumerate(travelPath[1:]):
         # !!!注意index的值!!!
@@ -168,11 +237,9 @@ def calcuSlack2(myGraph, travelPath, node, insertLocation, timeParamDict):
 
     return totalSlack, travelPath
 
-def toptw(startDestList, myGraph, bigPointDir):
-    
+def toptw(startDestList, myGraph):
     # 用来记录加入到路径中的点
     existList = []
-
     routeMaxDuration = myGraph.graph['RouteMaxDuration']
     threeDayPath = []
     threeDayProfitList = [0, 0, 0]
@@ -278,7 +345,7 @@ def toptw(startDestList, myGraph, bigPointDir):
                     continue
                 ratio = float(tmpTotalProfit) / float(tmpTotalSlack)
                 threeDayRatioList[day-1] = ratio
-                threeDayTmpPathList[day-1] = tmpTravelPath
+                threeDayTmpPathList[day-1] = [copy.copy(x) for x in tmpTravelPath]
                 threeDayTmpProfitList[day-1] = tmpTotalProfit
 
             # 随机选择一天进行插入
@@ -288,16 +355,9 @@ def toptw(startDestList, myGraph, bigPointDir):
             while accept == False:
                 randomDay = random.randrange(0, 3)
                 if threeDayRatioList[randomDay] > threeDayBestRatioList[randomDay]:
-                    if float(threeDayProfitList[randomDay]) == 0:
-                        continue
                     threeDayBestRatioList[randomDay] = threeDayRatioList[randomDay]
                     threeDayPath[randomDay] = [copy.copy(x) for x in threeDayTmpPathList[randomDay]]
-                    # 当变化率小于0.1的时候，进行内部路径计算
-                    if float(abs(threeDayProfitList[randomDay] - threeDayTmpProfitList[randomDay])) / float(threeDayProfitList[randomDay]) < 0.1:
-                        tmpPath = [copy.copy(x) for x in threeDayTmpPathList[randomDay]]
-                        calcuInnerPath(myGraph, tmpPath, randomDay, bigPointDir)
                     threeDayProfitList[randomDay] = threeDayTmpProfitList[randomDay]
-
                     accept = True
                 dieTime = dieTime + 1
                 if dieTime > 15:
@@ -322,36 +382,19 @@ def toptw(startDestList, myGraph, bigPointDir):
 
 
     shake(myGraph, threeDayPath, threeDayBestRatioList, threeDayProfitList, existList)
-    bigPointPaths = os.listdir(bigPointDir)
     for day, path in enumerate(threeDayPath):
         print(path)
-        for component in path:
-            if str(component['ID']) in bigPointPaths:
-                smallG = nx.read_gml(bigPointDir + '\\' + str(component['ID']))
-                smallG = nx.convert_node_labels_to_integers(smallG)
-                BigPoint.dfsTraverse(smallG, component['aTime'] + component['waitTime'], component['dTime'], day+1) 
-        print()
+    # bigPointPaths = os.listdir(bigPointDir)
+    # for day, path in enumerate(threeDayPath):
+    #     print(path)
+    #     for component in path:
+    #         if str(component['ID']) in bigPointPaths:
+    #             smallG = nx.read_gml(bigPointDir + '\\' + str(component['ID']))
+    #             smallG = nx.convert_node_labels_to_integers(smallG)
+    #             BigPoint.dfsTraverse(smallG, component['aTime'] + component['waitTime'], component['dTime'], day+1) 
+    #     print()
     
     return
-
-def calcuInnerPath(myGraph, tmpPath, randomDay, bigPointDir):
-    # 计算内部路径
-    bigPointPaths = os.listdir(bigPointDir)
-    for index, pathComponent in enumerate(tmpPath):
-        if str(component['ID']) in bigPointPaths:
-            precId = tmpPath[index-1]['ID']
-            succId = tmpPath[index+1]['ID']
-            goDuration = myGraph.edges[precId, pathComponent['ID']]['duration']
-            leaveDuration = myGraph.edges[pathComponent['ID'], succId]['duration']
-            goDurationList = [random.randrange(max(0, goDuration - 5), goDuration + 5),
-                            random.randrange(max(0, goDuration - 5), goDuration + 5),
-                            random.randrange(max(0, goDuration - 5), goDuration + 5)]
-            leaveDurationList = [random.randrange(max(0, leaveDuration - 5), leaveDuration + 5),
-                                random.randrange(max(0, leaveDuration - 5), leaveDuration + 5)]
-            deparTimeFromPrecNode = tmpPath[index-1]['dTime']
-            succPointArriveTime = BigPoint.dfsTraverse2(myGraph, deparTimeFromPrecNode, goDuration, leaveDuration, tmpPath[index+1]['aTime'], randomDay)
-            tmpPath[index+1]['aTime'] = succPointArriveTime
-            checkAndCalcu(myGraph, tmpPath, randomDay)
 
 def checkAndCalcu(myGraph, travelPath, day):
     # 检测一条路径是否合法
@@ -673,15 +716,17 @@ def shake(myGraph, threeDayPath, threeDayBestRatioList, threeDayProfitList, exis
     #     existList.append(bestKNodeId[selectNode])
     # # print(travelPath)
     # return travelPath;
-    
+# Define signal handler function
+
 os.chdir('instances')
 fileList = os.listdir('.')
 for f in fileList:
     if os.path.isfile(f):
         G = nx.Graph()
-        createGraph(G, f)
+        ll = []
+        createGraph(G, f, ll)
         ll = random.sample(G.nodes, 6)
-        # print(ll)
+        # print(G.nodes)
         startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
         # print(startDestList)
-        toptw(startDestList, G, f.split('.')[0])
+        toptw(startDestList, G)

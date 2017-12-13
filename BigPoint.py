@@ -112,9 +112,9 @@ def generateG(keyPointName):
     for data in G.nodes.data():                               
         node = data[1]
         if cnt > 0 and node['ServiceTime'] == 60:   
-            smallG = nx.generators.random_graphs.fast_gnp_random_graph(12, p=0.2, directed=False)
+            smallG = nx.generators.random_graphs.fast_gnp_random_graph(15, p=0.2, directed=False)
             while len(list(nx.connected_components(smallG))) > 1:
-                smallG = nx.generators.random_graphs.fast_gnp_random_graph(12, p=0.2, directed=False)
+                smallG = nx.generators.random_graphs.fast_gnp_random_graph(15, p=0.2, directed=False)
             constructG(smallG, node['TimeWindows'])
             keyPointFile = open(str(node['ID']), 'wb')
             # nx.write_gexf(smallG, keyPointFile)
@@ -197,19 +197,39 @@ def dfsTraverse(smallG, arriveTime, maxDuration, day):
     # arriveTime是从s点到达此地，经过wait后的时间，即进入入口的时间
     entranceList = list(map(int, smallG.graph['entrance']))
     exportList = list(map(int, smallG.graph['export']))
-    path = []
-    profitSum = 0
     paramDict = {}
     paramDict['maxDuration'] = maxDuration
     paramDict['bestProfit'] = 0
     paramDict['bestPath'] = []
     paramDict['day'] = day
-    edgeVisited = [[False for _ in range(20)] for _ in range(20)]
 
     for entrance in entranceList:
+        path = []
+        profitSum = 0
+        edgeVisited = [[False for _ in range(20)] for _ in range(20)]
         dfs(smallG, entrance, exportList, arriveTime, path, profitSum, edgeVisited, paramDict)
     print('bestProfit', paramDict['bestProfit'])
     print('bestPath', paramDict['bestPath'])
+
+def dfsTraverse2(smallG, deparTimeFromPrecNode, goDuration, leaveDuration, maxDuration, day):
+    # arriveTime是从s点到达此地，经过wait后的时间，即进入入口的时间
+    entranceList = list(map(int, smallG.graph['entrance']))
+    exportList = list(map(int, smallG.graph['export']))
+    paramDict = {}
+    paramDict['maxDuration'] = maxDuration
+    paramDict['bestProfit'] = 0
+    paramDict['bestPath'] = []
+    paramDict['day'] = day
+
+    for index, entrance in enumerate(entranceList):
+        path = []
+        profitSum = 0
+        edgeVisited = [[False for _ in range(20)] for _ in range(20)]
+        arriveTime = deparTimeFromPrecNode + goDuration[index]
+        dfs(smallG, entrance, exportList, arriveTime, path, profitSum, edgeVisited, paramDict)
+    print('bestProfit', paramDict['bestProfit'])
+    print('bestPath', paramDict['bestPath'])
+    return maxDuration
 
 if __name__ == "__main__":
     # os.chdir('instances')
@@ -217,10 +237,10 @@ if __name__ == "__main__":
     # for f in fileList:
     #     generateG(f)
 
-    smallG = nx.read_gml('d:\PythonCode\TOPTW\instances\TPA_6_10-1\960')
+    smallG = nx.read_gml('d:\PythonCode\TOPTW\instances\TPA_6_20-3\960')
     smallG = nx.convert_node_labels_to_integers(smallG)
     # print(smallG.nodes.data())
     # print(smallG.edges.data())
-    dfsTraverse(smallG, 200, 270, 3)
+    dfsTraverse(smallG, 0, 70, 3)
 
 
