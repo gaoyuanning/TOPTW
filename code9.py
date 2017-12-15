@@ -5,6 +5,7 @@ import copy
 import os
 import math
 import BigPoint
+import time
 
 # 3条最优路径,且同时产生
 # 在slack允许的情况下找等待时间最长的点进行插入
@@ -42,6 +43,12 @@ def createGraph(myGraph, fileName, ll):
         G.nodes[node]['Priority'] = int(lists[2])
         G.nodes[node]['Profit'] = int(lists[3])
         G.nodes[node]['Probability'] = float(lists[4])
+        if int(lists[1] == 1):
+            if tmpP <= 0:
+                tmpP = 5000
+            if tmpP < 1000:
+                tmpP = tmpP * 10
+            G.nodes[node]['Profit'] = tmpP
         TWS = lists[5].split(',')
         # for TW in TWS:
         timeWindows = [{} for _ in range(4)]
@@ -384,6 +391,8 @@ def toptw(startDestList, myGraph):
     shake(myGraph, threeDayPath, threeDayBestRatioList, threeDayProfitList, existList)
     for day, path in enumerate(threeDayPath):
         print(path)
+    profitSum = sum(threeDayProfitList)
+    print('total profit:', profitSum)
     # bigPointPaths = os.listdir(bigPointDir)
     # for day, path in enumerate(threeDayPath):
     #     print(path)
@@ -718,15 +727,32 @@ def shake(myGraph, threeDayPath, threeDayBestRatioList, threeDayProfitList, exis
     # return travelPath;
 # Define signal handler function
 
-os.chdir('instances')
-fileList = os.listdir('.')
-for f in fileList:
-    if os.path.isfile(f):
-        G = nx.Graph()
-        ll = []
-        createGraph(G, f, ll)
-        ll = random.sample(G.nodes, 6)
-        # print(G.nodes)
-        startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
-        # print(startDestList)
-        toptw(startDestList, G)
+# os.chdir('instances')
+# fileList = os.listdir('.')
+# for f in fileList:
+#     if os.path.isfile(f):
+#         G = nx.Graph()
+#         ll = []
+#         createGraph(G, f, ll)
+#         ll = random.sample(G.nodes, 6)
+#         # print(G.nodes)
+#         startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
+#         # print(startDestList)
+#         toptw(startDestList, G)
+
+# f = 'd:\PythonCode\TOPTW\instances\TPA_8_10-2.txt'
+# f = 'd:\PythonCode\TOPTW\instances\TPA_8_20-2.txt'
+# f = 'd:\PythonCode\TOPTW\instances\TPA_8_40-2.txt'
+# f = 'd:\PythonCode\TOPTW\instances\TPA_8_80-2.txt'
+f = 'd:\PythonCode\TOPTW\instances\TPA_8_140-2.txt'
+G = nx.Graph()
+ll = []
+createGraph(G, f, ll)
+ll = random.sample(G.nodes, 6)
+# print(ll)
+startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
+# print(startDestList)
+t1 = time.time()
+toptw(startDestList, G)
+t2 = time.time()
+print('time:', t2 - t1)

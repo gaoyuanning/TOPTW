@@ -1,0 +1,99 @@
+var chart = Highcharts.chart('container', {
+    "xAxis": [
+        {
+            "type": "category",
+            "categories": [
+                "10",
+                "20",
+                "40",
+                "80",
+                "140"
+            ],
+            "title": {
+                "text": "# of optional nodes",
+                "style": {
+                    "fontFamily": "\"微软雅黑\", Arial, Helvetica, sans-serif",
+                    "color": "#666666",
+                    "fontSize": "14px",
+                    "fontWeight": "normal",
+                    "fontStyle": "normal"
+                }
+            },
+            "index": 0,
+            "isX": true,
+        }
+    ],
+    "series": [
+        {
+            "name": "Node-spliting",
+            "data": [
+                40335,
+                131430,
+                148786,
+                155320,
+                143954
+            ],
+            "color": "#E6DD91"
+        },
+        {
+            "name": "Route-choosing",
+            "data": [
+                47960,
+                151270,
+                143952,
+                143243,
+                159342
+            ],
+            "color": "#ABABAB"
+        },
+        {
+            "name": "Embedded",
+            "data": [
+                51954,
+                139978,
+                153953,
+                159900,
+                188263
+            ],
+            "color": "#5C4A78"
+        }
+    ],
+    "yAxis": [
+        {
+            "title": {
+                "text": "Best Profit",
+                "style": {
+                    "fontFamily": "\"微软雅黑\", Arial, Helvetica, sans-serif",
+                    "color": "#666666",
+                    "fontSize": "14px",
+                    "fontWeight": "normal",
+                    "fontStyle": "normal"
+                }
+            },
+            "index":0,
+            "min": 20000,
+            "max": 160000
+        }
+    ],
+    "chart": {
+        "style": {
+            "fontFamily": "\"微软雅黑\", Arial, Helvetica, sans-serif",
+            "color": "#333",
+            "fontSize": "12px",
+            "fontWeight": "normal",
+            "fontStyle": "normal"
+        },
+        "type": "column"
+    },
+    "title": {
+        "text": ""
+    },
+    "credits": {
+        "enabled": false
+    },
+    "plotOptions": {
+        "series": {
+            "animation": false
+        }
+    }
+});

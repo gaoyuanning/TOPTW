@@ -1,0 +1,117 @@
+var chart = Highcharts.chart('container', {
+    "xAxis": [
+        {
+            "type": "category",
+            "categories": [
+                "10",
+                "20",
+                "40",
+                "80",
+                "140"
+            ],
+            "title": {
+                "text": "# of optional nodes"
+            },
+            "opposite": false,
+            "reversed": false,
+            "crosshair": {
+                "dashStyle": "Solid"
+            },
+            "labels": {
+                "style": {
+                    "color": "#666666",
+                    "cursor": "default",
+                    "fontSize": "11px"
+                }
+            },
+            "index": 0,
+            "isX": true
+        }
+    ],
+    "series": [
+        {
+            "name": "Super-POI Scale = 10",
+            "data": [
+                0.042,
+                0.116,
+                0.315,
+                0.262,
+                1.073
+            ],
+            "_colorIndex": 0,
+            "_symbolIndex": 0
+        },
+        {
+            "name": "Super-POI Scale = 15",
+            "data": [
+                0.091,
+                0.442,
+                1.962,
+                4.467,
+                4.236
+            ],
+            "_colorIndex": 1,
+            "_symbolIndex": 1
+        },
+        {
+            "name": "Super-POI Scale = 20",
+            "data": [
+                12.346,
+                5.709,
+                10.742,
+                27.364,
+                33.134
+            ],
+            "_colorIndex": 5,
+            "_symbolIndex": 0
+        }
+    ],
+    "yAxis": [
+        {
+            "title": {
+                "text": "CPU Time(s)"
+            },
+            "type": "linear",
+            "index": 0,
+            "max": 35
+        }
+    ],
+    "chart": {
+        "style": {
+            "fontFamily": "\"微软雅黑\", Arial, Helvetica, sans-serif",
+            "color": "#333",
+            "fontSize": "14px",
+            "fontWeight": "normal",
+            "fontStyle": "normal"
+        },
+        "inverted": false
+    },
+    "title": {
+        "text": "",
+        "x": -20
+    },
+    "subtitle": {
+        "text": "",
+        "x": -20
+    },
+    "tooltip": {
+        "valueSuffix": "°C"
+    },
+    "legend": {
+        "layout": "horizontal",
+        "align": "center",
+        "verticalAlign": "bottom",
+        "enabled": true
+    },
+    "plotOptions": {
+        "series": {
+            "dataLabels": {
+                "enabled": false
+            },
+            "animation": false
+        }
+    },
+    "credits": {
+        "text": ""
+    }
+});

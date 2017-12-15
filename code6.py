@@ -4,11 +4,13 @@ import random
 import copy
 import os
 import BigPoint
+import time
 
 # 3条最优路径,且同时产生
 # 在slack允许的情况下找等待时间最长的点进行插入
 # 对待插入的点，随机选择一天插入
 # 对每一条数据进行测试
+# Super-POI的值如果小于1000的话，增大10倍。如果原始值为0，那么设置为5000
 
 def createGraph(myGraph, fileName):
     categoryMap = {1:70, 2:40, 3:20, 4:10, 5:5}
@@ -36,6 +38,12 @@ def createGraph(myGraph, fileName):
         G.nodes[node]['Priority'] = int(lists[2])
         G.nodes[node]['Profit'] = int(lists[3])
         G.nodes[node]['Probability'] = float(lists[4])
+        if int(lists[1] == 1):
+            if tmpP <= 0:
+                tmpP = 5000
+            if tmpP < 1000:
+                tmpP = tmpP * 10
+            G.nodes[node]['Profit'] = tmpP
         TWS = lists[5].split(',')
         # for TW in TWS:
         timeWindows = [{} for _ in range(4)]
@@ -312,6 +320,7 @@ def toptw(startDestList, myGraph, bigPointDir):
                 existList.append(node['ID'])
                 finish = False
 
+    profitSum = sum(threeDayProfitList)
     bigPointPaths = os.listdir(bigPointDir)
     for day, path in enumerate(threeDayPath):
         print(path)
@@ -319,8 +328,11 @@ def toptw(startDestList, myGraph, bigPointDir):
             if str(component['ID']) in bigPointPaths:
                 smallG = nx.read_gml(bigPointDir + '\\' + str(component['ID']))
                 smallG = nx.convert_node_labels_to_integers(smallG)
-                BigPoint.dfsTraverse(smallG, component['aTime'] + component['waitTime'], component['dTime'], day+1) 
+                tmpP = BigPoint.dfsTraverse(smallG, component['aTime'] + component['waitTime'], component['dTime'], day+1) 
+                profitSum = profitSum + tmpP
+                profitSum = profitSum - myGraph.nodes[component['ID']]['Profit']
         print()
+    print('total profit:', profitSum)
 
             
     #         # 检查当前点是否可以插入到bestKPath中  
@@ -359,14 +371,26 @@ def toptw(startDestList, myGraph, bigPointDir):
     # # print(travelPath)
     # return travelPath;
     
-os.chdir('instances')
-fileList = os.listdir('.')
-for f in fileList:
-    if os.path.isfile(f):
-        G = nx.Graph()
-        createGraph(G, f)
-        ll = random.sample(G.nodes, 6)
-        # print(ll)
-        startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
-        # print(startDestList)
-        toptw(startDestList, G, f.split('.')[0])
+# os.chdir('instances')
+# fileList = os.listdir('.')
+# for f in fileList:
+#     if os.path.isfile(f):
+#         G = nx.Graph()
+#         createGraph(G, f)
+#         ll = random.sample(G.nodes, 6)
+#         # print(ll)
+#         startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
+#         # print(startDestList)
+#         toptw(startDestList, G, f.split('.')[0])
+
+f = 'd:\PythonCode\TOPTW\instances\TPA_6_40-3.txt'
+G = nx.Graph()
+createGraph(G, f)
+ll = random.sample(G.nodes, 6)
+# print(ll)
+startDestList = [{'s':ll[0],'t':ll[1]}, {'s':ll[2],'t':ll[3]}, {'s':ll[4],'t':ll[5]}]
+# print(startDestList)
+t1 = time.time()
+toptw(startDestList, G, f.split('.')[0])
+t2 = time.time()
+print('time:', t2 - t1)

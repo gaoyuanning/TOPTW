@@ -30,9 +30,15 @@ def createGraph(myGraph):
         G.add_node(node)
         G.nodes[node]['ID'] = node
         G.nodes[node]['ServiceTime'] = categoryMap[int(lists[1])]
-        G.nodes[node]['Priority'] = int(lists[2])
+        tmpP = G.nodes[node]['Priority'] = int(lists[2])
         G.nodes[node]['Profit'] = int(lists[3])
         G.nodes[node]['Probability'] = float(lists[4])
+        if int(lists[1] == 1):
+                if tmpP <= 0:
+                tmpP = 5000
+            if tmpP < 1000:
+                tmpP = tmpP * 10
+            G.nodes[node]['Profit'] = tmpP
         TWS = lists[5].split(',')
         # for TW in TWS:
         timeWindows = [{} for _ in range(4)]
